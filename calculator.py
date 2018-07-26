@@ -1,3 +1,6 @@
+import traceback
+from wsgiref.simple_server import make_server
+
 """
 For your homework this week, you'll be creating a wsgi application of
 your own.
@@ -47,9 +50,51 @@ def add(*args):
 
     # TODO: Fill sum with the correct value, based on the
     # args provided.
-    sum = "0"
+    nums = [int(i) for i in args]
+    total = sum(nums)
+    # for arg in args:
+      # int(summ) + int(arg)
+    return str(total)
 
-    return sum
+def subtract(*args):
+    """ Returns a STRING with the sum of the arguments """
+
+    # TODO: Fill sum with the correct value, based on the
+    # args provided.
+    # sub = "0"
+    nums = [int(i) for i in args]
+    total = nums.pop(0)
+    for n in nums:
+      total = total - n
+    return str(total)
+
+def multiply(*args):
+    """ Returns a STRING with the sum of the arguments """
+
+    # TODO: Fill sum with the correct value, based on the
+    # args provided.
+    # product = "0"
+    nums = [int(i) for i in args]
+    total = nums.pop(0)
+    for n in nums:
+      total = total * n
+    return str(total)
+
+    return product
+
+def divide(*args):
+    """ Returns a STRING with the sum of the arguments """
+
+    # TODO: Fill sum with the correct value, based on the
+    # args provided.
+    # div = "0"
+    nums = [int(i) for i in args]
+    total = nums.pop(0)
+    for n in nums:
+      total = total/float(n)
+    return str(total)
+
+    return div
 
 # TODO: Add functions for handling more arithmetic operations.
 
@@ -63,12 +108,48 @@ def resolve_path(path):
     # examples provide the correct *syntax*, but you should
     # determine the actual values of func and args using the
     # path.
-    func = add
-    args = ['25', '32']
+
+    # path is something like '/add/3/5'
+    # or '/multiply/2/10'
+
+    routes = {
+      'add': add,
+      'subtract': subtract,
+      'multiply': multiply,
+      'divide': divide,
+    }
+
+    path = path.strip('/').split('/')
+    func_name = path.pop(0)
+    func = routes.get(func_name)
+    if func is None:
+      raise NameError
+    args = path
+    # args = ['25', '32']
 
     return func, args
 
 def application(environ, start_response):
+    headers = [("Content-type", "text/html")]
+    try:
+        path = environ.get('PATH_INFO', None)
+        # path looks like maybe '/add/3/5'
+        if path is None:
+            raise NameError
+        func, args = resolve_path(path)
+        body = func(*args)
+        status = "200 OK"
+    except NameError:
+        status = "404 Not Found"
+        body = "<h1>Not Found</h1>"
+    except Exception:
+        status = "500 Internal Server Error"
+        body = "<h1>Internal Server Error</h1>"
+        print(traceback.format_exc())
+    finally:
+        headers.append(('Content-length', str(len(body))))
+        start_response(status, headers)
+        return [body.encode('utf8')]
     # TODO: Your application code from the book database
     # work here as well! Remember that your application must
     # invoke start_response(status, headers) and also return
@@ -76,9 +157,12 @@ def application(environ, start_response):
     #
     # TODO (bonus): Add error handling for a user attempting
     # to divide by zero.
-    pass
+    # pass
 
 if __name__ == '__main__':
+
+    srv = make_server('localhost', 8080, application)
+    srv.serve_forever()
     # TODO: Insert the same boilerplate wsgiref simple
     # server creation that you used in the book database.
-    pass
+    # pass
